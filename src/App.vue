@@ -23,6 +23,8 @@
             <br><br>
             <app-upload v-model="fileName" @formData="getFormData" ></app-upload>
             <v-btn @click.native="uploadFiles" class="secondary 1">submit<v-icon right light>cloud_upload</v-icon></v-btn>
+            <br><br>
+            <app-bar-chart :data="chartData" ></app-bar-chart>
           </div>
         </v-flex>
       </v-layout>
@@ -35,6 +37,7 @@
 
 <script>
 import Upload from './components/FileUpload.vue'
+import BarChart from './components/charts/VisionBar.vue'
 const Clarifai = require('clarifai')
 
 const app = new Clarifai.App({
@@ -42,18 +45,19 @@ const app = new Clarifai.App({
 })
 
 export default {
-
   name: 'App',
   data () {
     return {
       title: 'ai recognition app',
       formData: new FormData(),
       fileName: '',
-      fixed: true
+      fixed: true,
+      chartData: [],
     }
   },
   components: {
-    AppUpload: Upload
+    AppUpload: Upload,
+    AppBarChart: BarChart
   },
   methods: {
     getFormData(e){
@@ -63,18 +67,31 @@ export default {
 
       if(this.fileName !== ''){ //quick check the file has been selected
         //put the upload magic here
+        console.log('here')
         const image = this.formData.get('file')
-        console.log(image);
-        console.log(this.formData.get('path'));
         this.getBase64(image).then(
           data => {
-            console.log(data.replace('data:image/jpeg;base64,', ''));
             app.models.predict(Clarifai.GENERAL_MODEL, {base64: data.replace('data:image/jpeg;base64,', '')}).then(
-              function(response) {
+              (response) => {
                 // do something with response
-                console.log(response)
+                //console.log(response)
+
+                console.log('out')
+
+
+                const array = response.outputs[0].data.concepts;
+
+                console.log(array)
+
+                this.chartData = array;
+
+                console.log(this.chartData);
+
+              //  this.setChartData(array);
+              //  console.log(this.chartData)
+
               },
-              function(err) {
+              (err) => {
                 // there was an error
                 console.log(err)
               });
@@ -89,6 +106,11 @@ export default {
         reader.onload = () => resolve(reader.result);
         reader.onerror = error => reject(error);
       });
+    },
+    setChartData(array){
+      console.log('here')
+      console.log(array)
+      this.chartData = array;
     }
   }
 }
